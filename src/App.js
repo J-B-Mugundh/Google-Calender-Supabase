@@ -19,20 +19,19 @@ function App() {
   }
 
   async function googleSignIn() {
-    async function googleSignIn() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      scopes: 'https://www.googleapis.com/auth/calendar.events'
+      scopes: 'https://www.googleapis.com/auth/calendar' // This was the original scope
+      // Add the following scope for creating events
+      + ' https://www.googleapis.com/auth/calendar.events'
     }
   });
-  if(error) {
+  if (error) {
     alert("Error logging in to Google provider with Supabase");
     console.log(error);
   }
 }
-
-  }
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -52,18 +51,24 @@ function App() {
         'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone 
       }
     }
-    await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
-      method: "POST",
-      headers: {
-        'Authorization':'Bearer ' + session.provider_token 
-      },
-      body: JSON.stringify(event)
-    }).then((data) => {
-      return data.json();
-    }).then((data) => {
+    try {
+      const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+        method: "POST",
+        headers: {
+          'Authorization':'Bearer ' + session.provider_token
+        },
+        body: JSON.stringify(event)
+      });
+      if (!response.ok) {
+        throw new Error(`Error creating event: ${await response.text()}`);
+      }
+      const data = await response.json();
       console.log(data);
       alert("Event created, check your Google Calendar!");
-    });
+    } catch (error) {
+      console.error("Error creating calendar event:", error);
+      alert("Failed to create event. Check the console for details.");
+    }
   }
 
   console.log(session);
